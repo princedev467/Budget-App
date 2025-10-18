@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Budget App</h1>
+            <p>Track your budget and expenses efficiently</p>
+        </header>
+
+        <div class="app-grid">
+            <!-- Budget Form -->
+            <div class="card">
+                <h2>Set Your Budget</h2>
+                <form id="budget-form">
+                    <div class="form-group">
+                        <label for="budget-input">Please enter your Budget</label>
+                        <input type="number" id="budget-input" placeholder="Enter budget amount" step="0.01" min="0">
+                        <span class="error" id="budget-error"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Calculate</button>
+                </form>
+            </div>
+
+            <!-- Expense Form -->
+            <div class="card">
+                <h2 id="expense-form-title">Add Expense</h2>
+                <form id="expense-form">
+                    <div class="form-group">
+                        <label for="expense-name">Please enter your Expense</label>
+                        <input type="text" id="expense-name" placeholder="Enter expense name">
+                        <span class="error" id="expense-name-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense-amount">Please enter your Expense Amount</label>
+                        <input type="number" id="expense-amount" placeholder="Enter expense amount" step="0.01" min="0">
+                        <span class="error" id="expense-amount-error"></span>
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit" class="btn btn-primary" id="expense-submit">Add Expense</button>
+                        <button type="button" class="btn btn-secondary" id="cancel-edit" style="display: none;">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Budget Summary -->
+            <div class="summary-grid">
+                <div class="summary-card budget">
+                    <h3>Total Budget</h3>
+                    <span class="amount" id="total-budget">$0.00</span>
+                </div>
+                <div class="summary-card expenses">
+                    <h3>Expenses</h3>
+                    <span class="amount" id="total-expenses">$0.00</span>
+                </div>
+                <div class="summary-card balance">
+                    <h3>Balance</h3>
+                    <span class="amount" id="balance">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Expenses List -->
+            <div class="card">
+                <h2>Expenses List</h2>
+                <div id="expenses-list" class="expenses-container">
+                    <p class="no-expenses">No expenses added yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class BudgetApp {
+            constructor() {
+                this.budget = 0;
+                this.expenses = [];
+                this.editingId = null;
+                this.init();
+            }
+
+            init() {
+                this.loadData();
+                this.bindEvents();
+                this.updateDisplay();
+            }
+
+            bindEvents() {
+                document.getElementById('budget-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleBudgetSubmit();
+                });
+
+                document.getElementById('expense-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleExpenseSubmit();
+                });
+
+                document.getElementById('cancel-edit').addEventListener('click', () => {
+                    this.cancelEdit();
+                });
+            }
+
+            handleBudgetSubmit() {
+                const input = document.getElementById('budget-input');
+                const error = document.getElementById('budget-error');
+                const value = parseFloat(input.value);
+
+                error.textContent = '';
+
+                if (!input.value || isNaN(value) || value <= 0) {
+                    error.textContent = 'please enter a valid number';
+                    return;
+                }
+
+                this.budget = value;
+                this.saveData();
+                this.updateDisplay();
+                input.value = '';
+            }
+
+            handleExpenseSubmit() {
+                const nameInput = document.getElementById('expense-name');
+                const amountInput = document.getElementById('expense-amount');
+                const nameError = document.getElementById('expense-name-error');
+                const amountError = document.getElementById('expense-amount-error');
+                
+                nameError.textContent = '';
+                amountError.textContent = '';
+
+                let hasError = false;
+
+                if (!nameInput.value.trim()) {
+                    nameError.textContent = 'please enter your expences';
+                    hasError = true;
+                }
+
+                const amount = parseFloat(amountInput.value);
+                if (!amountInput.value || isNaN(amount) || amount <= 0) {
+                    amountError.textContent = 'please enter a valid number';
+                    hasError = true;
+                }
+
+                if (hasError) return;
+
+                const expense = {
+                    id: this.editingId || Date.now().toString(),
+                    name: nameInput.value.trim(),
+                    amount: amount,
+                    date: new Date().toISOString()
+                };
+
+                if (this.editingId) {
+                    const index = this.expenses.findIndex(e => e.id === this.editingId);
+                    this.expenses[index] = expense;
+                    this.cancelEdit();
+                } else {
+                    this.expenses.push(expense);
+                }
+
+                this.saveData();
+                this.updateDisplay();
+                nameInput.value = '';
+                amountInput.value = '';
+            }
+
+            editExpense(id) {
+                const expense = this.expenses.find(e => e.id === id);
+                if (!expense) return;
+
+                document.getElementById('expense-name').value = expense.name;
+                document.getElementById('expense-amount').value = expense.amount;
+                document.getElementById('expense-form-title').textContent = 'Edit Expense';
+                document.getElementById('expense-submit').textContent = 'Update Expense';
+                document.getElementById('cancel-edit').style.display = 'inline-block';
+                
+                this.editingId = id;
+            }
+
+            cancelEdit() {
+                document.getElementById('expense-name').value = '';
+                document.getElementById('expense-amount').value = '';
+                document.getElementById('expense-form-title').textContent = 'Add Expense';
+                document.getElementById('expense-submit').textContent = 'Add Expense';
+                document.getElementById('cancel-edit').style.display = 'none';
+                document.getElementById('expense-name-error').textContent = '';
+                document.getElementById('expense-amount-error').textContent = '';
+                
+                this.editingId = null;
+            }
+
+            deleteExpense(id) {
+                this.expenses = this.expenses.filter(e => e.id !== id);
+                this.saveData();
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                const totalExpenses = this.expenses.reduce((sum, e) => sum + e.amount, 0);
+                const balance = this.budget - totalExpenses;
+
+                document.getElementById('total-budget').textContent = `$${this.budget.toFixed(2)}`;
+                document.getElementById('total-expenses').textContent = `$${totalExpenses.toFixed(2)}`;
+                document.getElementById('balance').textContent = `$${balance.toFixed(2)}`;
+
+                const balanceElement = document.getElementById('balance');
+                const balanceCard = balanceElement.closest('.summary-card');
+                balanceCard.className = `summary-card balance ${balance < 0 ? 'negative' : 'positive'}`;
+
+                this.renderExpenses();
+            }
+
+            renderExpenses() {
+                const container = document.getElementById('expenses-list');
+                
+                if (this.expenses.length === 0) {
+                    container.innerHTML = '<p class="no-expenses">No expenses added yet</p>';
+                    return;
+                }
+
+                container.innerHTML = this.expenses.map(expense => `
+                    <div class="expense-item">
+                        <div class="expense-info">
+                            <h4>${expense.name}</h4>
+                            <span class="expense-date">${new Date(expense.date).toLocaleDateString()}</span>
+                        </div>
+                        <div class="expense-actions">
+                            <span class="expense-amount">$${expense.amount.toFixed(2)}</span>
+                            <button class="btn-icon edit" onclick="app.editExpense('${expense.id}')" title="Edit">✏️</button>
+                            <button class="btn-icon delete" onclick="app.deleteExpense('${expense.id}')" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            saveData() {
+                sessionStorage.setItem('Budget', this.budget.toString());
+                sessionStorage.setItem('Expenses', JSON.stringify(this.expenses));
+            }
+
+            loadData() {
+                const savedBudget = sessionStorage.getItem('Budget');
+                const savedExpenses = sessionStorage.getItem('Expenses');
+
+                if (savedBudget) {
+                    this.budget = parseFloat(savedBudget) || 0;
+                }
+
+                if (savedExpenses) {
+                    try {
+                        this.expenses = JSON.parse(savedExpenses) || [];
+                    } catch (e) {
+                        this.expenses = [];
+                    }
+                }
+            }
+        }
+
+        const app = new BudgetApp();
+    </script>
+</body>
+</html>
