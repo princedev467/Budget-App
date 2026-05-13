@@ -109,13 +109,7 @@ If you like this project:
 - Fork it 🍴
 - Share it 🚀
 
----
 
-## 📜 License
-
-This project is licensed under the MIT License.
-
----
 
 # 💸 Smart Budgeting Starts Here
 Made with ❤️ by Prince Movaliya
